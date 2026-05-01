@@ -8,6 +8,7 @@
 #include "Components/TextBlock.h"
 #include "SpartaGameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 ASpartaPlayerController::ASpartaPlayerController()
 	: InputMappingContext(nullptr), 
@@ -18,7 +19,9 @@ ASpartaPlayerController::ASpartaPlayerController()
 	HUDWidgetClass(nullptr),
 	HUDWidgetInstance(nullptr),
 	MainMenuWidgetClass(nullptr),
-	MainMenuWidgetInstance(nullptr)
+	MainMenuWidgetInstance(nullptr),
+	DebuffWidgetClass(nullptr),
+	DebuffWidgetInstance(nullptr)
 {
 
 }
@@ -50,6 +53,11 @@ void ASpartaPlayerController::BeginPlay()
 	}
 }
 
+UUserWidget* ASpartaPlayerController::GetDebuffWidget() const
+{
+	return DebuffWidgetInstance;
+}
+
 UUserWidget* ASpartaPlayerController::GetHUDWidget() const
 {
 	return HUDWidgetInstance;
@@ -69,6 +77,12 @@ void ASpartaPlayerController::ShowGameHUD()
 		MainMenuWidgetInstance = nullptr;
 	}
 
+	if (DebuffWidgetInstance)
+	{
+		DebuffWidgetInstance->RemoveFromParent();
+		DebuffWidgetInstance = nullptr;
+	}
+
 	if (HUDWidgetClass)
 	{
 		HUDWidgetInstance = CreateWidget<UUserWidget>(this, HUDWidgetClass);
@@ -86,6 +100,15 @@ void ASpartaPlayerController::ShowGameHUD()
 			SpartaGameState->UpdateHUD();
 		}
 	}
+
+	if (DebuffWidgetClass)
+	{
+		DebuffWidgetInstance = CreateWidget<UUserWidget>(this, DebuffWidgetClass);
+		if (DebuffWidgetInstance)
+		{
+			DebuffWidgetInstance->AddToViewport();
+		}
+	}
 }
 
 void ASpartaPlayerController::ShowMainMenu(bool bIsRestart)
@@ -100,6 +123,12 @@ void ASpartaPlayerController::ShowMainMenu(bool bIsRestart)
 	{
 		MainMenuWidgetInstance->RemoveFromParent();
 		MainMenuWidgetInstance = nullptr;
+	}
+
+	if (DebuffWidgetInstance)
+	{
+		DebuffWidgetInstance->RemoveFromParent();
+		DebuffWidgetInstance = nullptr;
 	}
 
 	if (MainMenuWidgetClass)
@@ -159,4 +188,14 @@ void ASpartaPlayerController::StartGame()
 
 	UGameplayStatics::OpenLevel(GetWorld(), FName("BasicLevel"));
 	SetPause(false);
+}
+
+void ASpartaPlayerController::QuitGame()
+{
+	UKismetSystemLibrary::QuitGame(
+		this,
+		this,
+		EQuitPreference::Quit,
+		false
+	);
 }

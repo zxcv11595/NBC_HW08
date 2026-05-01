@@ -38,6 +38,9 @@ ASpartaCharacter::ASpartaCharacter()
 
 	MaxHealth = 100.0f;
 	Health = MaxHealth;
+
+	SlowMultiplier = 1.0f;
+	bIsSprinting = false;
 }
 
 void ASpartaCharacter::BeginPlay()
@@ -130,7 +133,12 @@ void ASpartaCharacter::Move(const FInputActionValue& value)
 	if (!Controller)
 		return;
 
-	const FVector2D MoveInput = value.Get<FVector2D>();
+	FVector2D MoveInput = value.Get<FVector2D>();
+
+	if (bReverseControl)
+	{
+		MoveInput *= -1.0f;
+	}
 
 	if (!FMath::IsNearlyZero(MoveInput.X))
 	{
@@ -169,18 +177,24 @@ void ASpartaCharacter::Look(const FInputActionValue& value)
 
 void ASpartaCharacter::StartSprint(const FInputActionValue& value)
 {
-	if (GetCharacterMovement())
+	/*if (GetCharacterMovement())
 	{
 		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
-	}
+	}*/
+
+	bIsSprinting = true;
+	UpdateMovementSpeed();
 }
 
 void ASpartaCharacter::StopSprint(const FInputActionValue& value)
 {
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
-	}
+	//if (GetCharacterMovement())
+	//{
+	//	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
+	//}
+
+	bIsSprinting = false;
+	UpdateMovementSpeed();
 }
 
 void ASpartaCharacter::OnDeath()
@@ -205,6 +219,26 @@ void ASpartaCharacter::UpdateOverheadHP()
 	{
 		HPText->SetText(FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), Health, MaxHealth)));
 	}
+
+	if (UTextBlock* HPText = Cast<UTextBlock>(OverheadWidgetInstance->GetWidgetFromName(TEXT("OverHeadHP"))))
+	{
+		HPText->SetText(FText::FromString(
+			FString::Printf(TEXT("%.0f / %.0f"), Health, MaxHealth)
+		));
+
+		if (Health <= MaxHealth * 0.3f)
+		{
+			HPText->SetColorAndOpacity(FSlateColor(FLinearColor::Red));
+		}
+		else if (Health <= MaxHealth * 0.7f)
+		{
+			HPText->SetColorAndOpacity(FSlateColor(FLinearColor::Yellow));
+		}
+		else
+		{
+			HPText->SetColorAndOpacity(FSlateColor(FLinearColor::Green));
+		}
+	}
 }
 
 float ASpartaCharacter::GetHealth() const
@@ -216,5 +250,81 @@ void ASpartaCharacter::AddHeatlh(float Amount)
 {
 	Health = FMath::Clamp(Health + Amount, 0.0f, MaxHealth);
 	UpdateOverheadHP();
+}
+
+FString ASpartaCharacter::GetDebuffStatusText() const
+{
+	TArray<FString> DebuffLines;
+
+	if (bIsSlowed)
+	{
+		float RemainingTime = GetWorldTimerManager().GetTimerRemaining(SlowTimerHandle);
+		DebuffLines.Add(FString::Printf(TEXT("Slow: %.1fs"), RemainingTime));
+	}
+
+	if (bReverseControl)
+	{
+		float RemainingTime = GetWorldTimerManager().GetTimerRemaining(ReverseControlTimerHandle);
+		DebuffLines.Add(FString::Printf(TEXT("Reverse: %.1fs"), RemainingTime));
+	}
+
+	if (DebuffLines.Num() == 0)
+	{
+		return TEXT("");
+	}
+
+	return FString::Join(DebuffLines, TEXT("\n"));
+}
+
+void ASpartaCharacter::UpdateMovementSpeed()
+{
+	const float BaseSpeed = bIsSprinting ? SprintSpeed : NormalSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = BaseSpeed * SlowMultiplier;
+}
+
+void ASpartaCharacter::ApplySlow(float SlowDuration)
+{
+	bIsSlowed = true;
+
+	SlowMultiplier = 0.5f;
+	UpdateMovementSpeed();
+
+	GetWorldTimerManager().ClearTimer(SlowTimerHandle);
+
+	GetWorldTimerManager().SetTimer(
+		SlowTimerHandle,
+		this,
+		&ASpartaCharacter::RemoveSlow,
+		SlowDuration,
+		false
+	);
+}
+
+void ASpartaCharacter::RemoveSlow()
+{
+	bIsSlowed = false;
+
+	SlowMultiplier = 1.0f;
+	UpdateMovementSpeed();
+}
+
+void ASpartaCharacter::ApplyReverseControl(float ReverseDuration)
+{
+	bReverseControl = true;
+
+	GetWorldTimerManager().ClearTimer(ReverseControlTimerHandle);
+
+	GetWorldTimerManager().SetTimer(
+		ReverseControlTimerHandle,
+		this,
+		&ASpartaCharacter::RemoveReverseControl,
+		ReverseDuration,
+		false
+	);
+}
+
+void ASpartaCharacter::RemoveReverseControl()
+{
+	bReverseControl = false;
 }
 

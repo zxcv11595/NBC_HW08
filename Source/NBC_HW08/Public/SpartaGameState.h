@@ -6,9 +6,19 @@
 #include "GameFramework/GameState.h"
 #include "SpartaGameState.generated.h"
 
-/**
- * 
- */
+USTRUCT(BlueprintType)
+struct FWaveData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float WaveDuration;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 ItemSpawnCount;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 ItemsPerSpawn;
+};
+
 UCLASS()
 class NBC_HW08_API ASpartaGameState : public AGameState
 {
@@ -38,6 +48,15 @@ public:
 	FTimerHandle LevelTimerHandle;
 	FTimerHandle HUDUpdateTimerHandle;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Wave")
+	TArray<FWaveData> Waves;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Wave")
+	int32 CurrentWaveIndex;
+
+	FTimerHandle WaveTimerHandle;
+	FTimerHandle SpawnTimerHandle;
+
+	int32 CurrentSpawnExecuted = 0;
 
 	UFUNCTION(BlueprintPure, Category = "Score")
 	int32 GetScore() const;
@@ -53,4 +72,9 @@ public:
 	void OnCoinCollected();
 
 	void UpdateHUD();
+
+	void StartWave();
+	void EndWave();
+	void SpawnItemsForWave(int32 ItemSpawnCount);
+	void HandleSpawnEvent();
 };

@@ -37,6 +37,13 @@ public:
 	TSubclassOf<UUserWidget> MainMenuWidgetClass;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Menu")
 	UUserWidget* MainMenuWidgetInstance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debuff")
+	TSubclassOf<UUserWidget> DebuffWidgetClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Debuff")
+	UUserWidget* DebuffWidgetInstance;
+
+	UUserWidget* GetDebuffWidget() const;
 	
 	UFUNCTION(BlueprintCallable, Category = "HUD")
 	UUserWidget* GetHUDWidget() const;
@@ -48,6 +55,8 @@ public:
 	void ShowMainMenu(bool bIsRestart);
 	UFUNCTION(BlueprintCallable, Category = "Menu")
 	void StartGame();
+	UFUNCTION(BlueprintCallable, Category = "Menu")
+	void QuitGame();
 
 protected:
 	virtual void BeginPlay() override;

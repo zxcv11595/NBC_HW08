@@ -29,6 +29,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Health")
 	float Health;
 
+	float SlowMultiplier;
+	bool bIsSprinting;
+
+	FTimerHandle SlowTimerHandle;
+	FTimerHandle ReverseControlTimerHandle;
+
+	bool bIsSlowed = false;
+	bool bReverseControl = false;
+
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual float TakeDamage(
@@ -65,6 +74,17 @@ public:
 	float GetHealth() const;
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void AddHeatlh(float Amount);
+
+	UFUNCTION(BlueprintPure, Category = "Debuff")
+	FString GetDebuffStatusText() const;
+
+	void UpdateMovementSpeed();
+
+	void ApplySlow(float SlowDuration);
+	void RemoveSlow();
+
+	void ApplyReverseControl(float ReverseDuration);
+	void RemoveReverseControl();
 
 private:
 	float NormalSpeed;
